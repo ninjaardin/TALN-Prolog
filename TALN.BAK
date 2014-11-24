@@ -4,6 +4,25 @@
 
 % Base de connaissances
 
+est_pierre(marbre).
+est_pierre(schiste).
+est_pierre(gneiss).
+est_pierre(ardoise).
+est_pierre(schiste-argileux).
+est_pierre(gabbro).
+est_pierre(granit).
+est_pierre(scorie).
+est_pierre(pierre-ponce).
+est_pierre(obsidienne).
+est_pierre(rhyolite).
+est_pierre(basalte).
+est_pierre(grès).
+est_pierre(conglomérat).
+est_pierre(tuf).
+est_pierre(calcaire).
+
+
+
 propriété(marbre, possède_cristaux).
 propriété(granite, possède_cristaux).
 propriété(gabbro, possède_cristaux).
@@ -67,16 +86,20 @@ propriété(balsate, surface_foncée).
 
 pierre_pour_type(Type, Pierre) :- type(Pierre, Type).
 
+est_type(métamorphique).
+est_type(sédimentaire).
+est_type(ignée).
+
 type(marbre, métamorphique).
 type(schiste, métamorphique).
 type(gneiss, métamorphique).
 type(ardoise, métamorphique).
-type(schiste_argileux, métamorphique).
+type(schiste-argileux, métamorphique).
 
 type(gabbro, ignée).
 type(granit, ignée).
 type(scorie, ignée).
-type(pierre_ponce, ignée).
+type(pierre-ponce, ignée).
 type(obsidienne, ignée).
 type(rhyolite, ignée).
 type(basalte, ignée).
@@ -89,26 +112,79 @@ type(calcaire, sédimentaire).
 
 %Commandes générales
 
-lancer( Question, Réponse ) :- repondre(Question, Sens), evaluer(Sens, Réponse).
+lancer :- lire(_, Question),
+          poser_question(Question, Réponse),
+          write(Réponse).
+
+poser_question( Question, Réponse ) :- repondre(Question, Sens), evaluer(Sens, Réponse).
 
 repondre(Question, Sens) :- analyse(_, Sens, Question, []).
 
-evaluer(Sens, Réponse):- call(Sens, Réponse).
+evaluer(Sens, Réponse):- call(Sens). %++++ À revoir, c'est un peu bizarre comment ça fonctionne.
+
+
+
+%Lecture des entrées de l'utilisateur
+
+% Le prédicat lire/2 lit une chaîne de caractères Chaine entre apostrophes
+% et terminée par un point.
+% Resultat correspond à la liste des mots contenus dans la phrase.
+% Les signes de ponctuation ne sont pas gérés.
+
+lire(Chaine,Resultat):- write('Entrer la phrase '),read(Chaine),
+                        name(Chaine, Temp), chaine_liste(Temp, Resultat),!.
+
+
+% Prédicat de transformation de chaîne en liste
+
+chaine_liste([],[]).
+chaine_liste(Liste,[Mot|Reste]):- separer(Liste,32,A,B), name(Mot,A),
+chaine_liste(B,Reste).
+
+
+% Sépare une liste par rapport à un élément
+
+separer([],_,[],[]):-!.
+separer([X|R],X,[],R):-!.
+separer([A|R],X,[A|Av],Ap):- X\==A, !, separer(R,X,Av,Ap).
+
+
+
 
 
 %Interprétation
 
 % ?-analyse(Arbre_synt, Semantique, [quelles, pierres, sont, sédimentaires], []).
 
-analyse(groupePhrase(GN,GV), Sémantique)-->
+analyse(groupePhrase(INT,GN,GV), Sémantique)-->
+        int(INT, Type_Réponse),
         gn(GN, Agent),
         gv(GV, Sémantique, Agent).
 
-gn(groupeNominal(Adj_int,N), Agent)-->
-        adj_int(Adj_int),
+
+int(interrogation(ADJ_INT), Type_Réponse)-->
+        adj_int(ADJ_INT, Type_Réponse).
+        
+int(interrogation(INT_DIR, ADJ_INT), Type_Réponse)-->
+        int_dir(INT_DIR, Type_Réponse),
+        adj_int(ADJ_INT).
+
+
+adj_int(adjectif_interrogatif(quelle), liste)-->[quelle].
+adj_int(adjectif_interrogatif(quelles), liste)-->[quelles].
+adj_int(adjectif_interrogatif(que))-->[que].
+adj_int(adjectif_interrogatif('qu''un'))-->['qu''un'].
+adj_int(adjectif_interrogatif('qu''une'))-->['qu''une'].
+
+
+int_dir(interrogation_directe('est-ce'), oui_non)-->['est-ce'].
+
+
+gn(groupeNominal(N), Agent)-->
         n(N, Agent).
 
-%gn(groupeNominal(Art,N))-->art(Art),n(N).
+gn(groupeNominal(Art,N), Agent)-->
+        art(Art),n(N, Agent).
 
 gv(groupeVerbal(V,Adj), Sémantique, Sujet)-->
         v(V, Sémantique, Sujet, Propriété),
@@ -116,25 +192,52 @@ gv(groupeVerbal(V,Adj), Sémantique, Sujet)-->
 
 %gv(groupeVerbal(V,GN))-->v(V),gn(GN).
 
-adj_int(adjectif_interrogatir(quelle))-->[quelle].
-adj_int(adjectif_interrogatir(quelles))-->[quelles].
 
-v(verbe(est), pierre_pour_type(Propriété), _, Propriété)-->[est].
-v(verbe(sont), pierre_pour_type(Propriété), _, Propriété)-->[sont].
+% Quelles pierres sont ignées?
+v(verbe(est), pierre_pour_type(Propriété), Sujet, Propriété)-->[est], {Sujet = pierre, est_type(Propriété)}.  %++++ à revoir l'appel, c'est bizarre comment ça marche.
+v(verbe(sont), est_type(Propriété), pierre_pour_type(Propriété), _, Propriété)-->[sont], {Sujet = pierre, est_type(Propriété)}.
+
+% Est-ce que le marbre est igné?
+v(verbe(est), type(Sujet, Propriété), Sujet, Propriété)-->[est], {est_pierre(Sujet), est_type(Propriété)}.
+v(verbe(sont), type(Sujet, Propriété), Sujet, Propriété)-->[sont], {est_pierre(Sujet), est_type(Propriété)}.
+
+
+art(article(le))-->[le].
+art(article(la))-->[la].
+art(article(la))-->[les].
+
 
 n(nom(pierre), pierre)-->[pierre].
 n(nom(pierres), pierre)-->[pierres].
+
+n(nom(marbre), marbre)-->[marbre].
+n(nom(schiste), schiste)-->[schiste].
+n(nom(gneiss), gneiss)-->[gneiss].
+n(nom(ardoise), ardoise)-->[ardoise].
+n(nom('l''ardoise'), ardoise)-->['l''ardoise'].
+n(nom(schiste-argileux), schiste-argileux)-->[schiste-argileux].
+n(nom(grès), grès)-->[grès].
+n(nom(conglomérat), conglomérat)-->[conglomérat].
+n(nom(tuf), tuf)-->[tuf].
+n(nom(calcaire), calcaire)-->[calcaire].
+n(nom(gabbro), gabbro)-->[gabbro].
+n(nom(granit), granit)-->[granit].
+n(nom(scorie), scorie)-->[scorie].
+n(nom(pierre-ponce), pierre-ponce)-->[pierre-ponce].
+n(nom(obsidienne), obsidienne)-->[obsidienne].
+n(nom('l''obsidienne'), obsidienne)-->['l''obsidienne'].
+n(nom(rhyolite), rhyolite)-->[rhyolite].
+n(nom(basalte), basalte)-->[basalte].
+
 
 adj(adjectif(métamorphique), métamorphique)-->[métamorphique].
 adj(adjectif(métamorphiques), métamorphique)-->[métamorphiques].
 adj(adjectif(sédimentaire), sédimentaire)-->[sédimentaire].
 adj(adjectif(sédimentaires), sédimentaire)-->[sédimentaires].
+adj(adjectif(igné),ignée)-->[igné].
 adj(adjectif(ignée),ignée)-->[ignée].
 adj(adjectif(ignées), ignée)-->[ignées].
 
-%art(article(un))-->[un].
 
-%n(nom(felin))-->[felin].
-%n(nom(carnivore))-->[carnivore].
 
 
