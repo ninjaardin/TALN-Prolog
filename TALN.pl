@@ -1,0 +1,140 @@
+% Auteur:
+% Date: 2014-11-22
+
+
+% Base de connaissances
+
+propriété(marbre, possède_cristaux).
+propriété(granite, possède_cristaux).
+propriété(gabbro, possède_cristaux).
+propriété(schiste, possède_cristaux).
+propriété(gneiss, possède_cristaux).
+
+propriété(marbre, cristaux_éparpillés).
+propriété(granit, cristaux_éparpillés).
+propriété(gabbro, cristaux_éparpillés).
+
+propriété(schiste, cristaux_en_couches).
+propriété(gneiss, cristaux_en_couches).
+
+propriété(marbre, cristaux_clairs).
+propriété(granit, cristaux_clairs).
+
+propriété(marbre, réagit_à_l_acide).
+propriété(calcaire, réagit_à_l_acide).
+
+propriété(gabbro, cristaux_foncés).
+
+propriété(schiste, couches_de_cristaux_identiques).
+
+propriété(gneisse, couches_de_cristaux_différentes).
+
+
+
+propriété(grès, possède_particules).
+propriété(conglomérat, possède_particules).
+
+propriété(grès, particules_petites).
+
+propriété(conglomérat, particules_grandes).
+
+
+propriété(tuf, possède_des_trous).
+propriété(scorie, possède_des_trous).
+propriété(pierre_ponce, possède_des_trous).
+
+propriété(tuf, trous_clairs).
+
+propriété(scorie, trous_foncés).
+propriété(pierre_ponce, trous_foncés).
+
+
+propriété(ardoise, possède_des_couches).
+propriété(schiste_argileux, possède_des_couches).
+
+propriété(ardoise, surface_luisante).
+
+propriété(schiste_argileux, surface_mate).
+
+
+propriété(obsidienne, surface_vitreuse).
+
+propriété(rhyolite, surface_claire).
+propriété(balsate, surface_foncée).
+
+
+
+
+pierre_pour_type(Type, Pierre) :- type(Pierre, Type).
+
+type(marbre, métamorphique).
+type(schiste, métamorphique).
+type(gneiss, métamorphique).
+type(ardoise, métamorphique).
+type(schiste_argileux, métamorphique).
+
+type(gabbro, ignée).
+type(granit, ignée).
+type(scorie, ignée).
+type(pierre_ponce, ignée).
+type(obsidienne, ignée).
+type(rhyolite, ignée).
+type(basalte, ignée).
+
+type(grès, sédimentaire).
+type(conglomérat, sédimentaire).
+type(tuf, sédimentaire).
+type(calcaire, sédimentaire).
+
+
+%Commandes générales
+
+lancer( Question, Réponse ) :- repondre(Question, Sens), evaluer(Sens, Réponse).
+
+repondre(Question, Sens) :- analyse(_, Sens, Question, []).
+
+evaluer(Sens, Réponse):- call(Sens, Réponse). % À revoir, c'est un peu bizarre comment ça fonctionne.
+
+
+%Interprétation
+
+% ?-analyse(Arbre_synt, Semantique, [quelles, pierres, sont, sédimentaires], []).
+
+analyse(groupePhrase(GN,GV), Sémantique)-->
+        gn(GN, Agent),
+        gv(GV, Sémantique, Agent).
+
+gn(groupeNominal(Adj_int,N), Agent)-->
+        adj_int(Adj_int),
+        n(N, Agent).
+
+%gn(groupeNominal(Art,N))-->art(Art),n(N).
+
+gv(groupeVerbal(V,Adj), Sémantique, Sujet)-->
+        v(V, Sémantique, Sujet, Propriété),
+        adj(Adj, Propriété).
+
+%gv(groupeVerbal(V,GN))-->v(V),gn(GN).
+
+adj_int(adjectif_interrogatir(quelle))-->[quelle].
+adj_int(adjectif_interrogatir(quelles))-->[quelles].
+
+v(verbe(est), pierre_pour_type(Propriété), _, Propriété)-->[est].  %++++ à revoir l'appel, c'est bizarre comment ça marche.
+v(verbe(sont), pierre_pour_type(Propriété), _, Propriété)-->[sont].
+
+n(nom(pierre), pierre)-->[pierre].
+n(nom(pierres), pierre)-->[pierres].
+
+adj(adjectif(métamorphique), métamorphique)-->[métamorphique].
+adj(adjectif(métamorphiques), métamorphique)-->[métamorphiques].
+adj(adjectif(sédimentaire), sédimentaire)-->[sédimentaire].
+adj(adjectif(sédimentaires), sédimentaire)-->[sédimentaires].
+adj(adjectif(ignée),ignée)-->[ignée].
+adj(adjectif(ignées), ignée)-->[ignées].
+
+%art(article(un))-->[un].
+
+%n(nom(felin))-->[felin].
+%n(nom(carnivore))-->[carnivore].
+
+
