@@ -161,6 +161,10 @@ analyse(groupePhrase(INT,GN,GV), Sémantique)-->
         gn(GN, Agent),
         gv(GV, Sémantique, Agent).
 
+analyse(groupePhrase(INT,GV,ADJ), Sémantique)-->
+        int(INT, Type_Réponse),
+        gv(GV, Sémantique, Propriété),
+        adj(ADJ, Propriété).
 
 int(interrogation(ADJ_INT), Type_Réponse)-->
         adj_int(ADJ_INT, Type_Réponse).
@@ -190,12 +194,14 @@ gv(groupeVerbal(V,Adj), Sémantique, Sujet)-->
         v(V, Sémantique, Sujet, Propriété),
         adj(Adj, Propriété).
 
-%gv(groupeVerbal(V,GN))-->v(V),gn(GN).
+gv(groupeVerbal(V,GN), Sémantique, Propriété)-->
+        v(V, Sémantique, Sujet, Propriété),
+        gn(GN, Sujet).
 
 
-% Quelles pierres sont ignées?
+% Quelles sont pierres sont ignées?
 v(verbe(est), pierre_pour_type(Propriété), Sujet, Propriété)-->[est], {Sujet = pierre, est_type(Propriété)}.  %++++ à revoir l'appel, c'est bizarre comment ça marche.
-v(verbe(sont), est_type(Propriété), pierre_pour_type(Propriété), _, Propriété)-->[sont], {Sujet = pierre, est_type(Propriété)}.
+v(verbe(sont), pierre_pour_type(Propriété), Sujet, Propriété)-->[sont], {Sujet = pierre, est_type(Propriété)}.
 
 % Est-ce que le marbre est igné?
 v(verbe(est), type(Sujet, Propriété), Sujet, Propriété)-->[est], {est_pierre(Sujet), est_type(Propriété)}.
