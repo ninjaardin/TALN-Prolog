@@ -199,7 +199,7 @@ gv(groupeVerbal(V,GN), Sémantique, Propriété)-->
         gn(GN, Sujet).
 
 
-% Quelles sont pierres sont ignées?
+% Quelles sont les pierres ignées?
 v(verbe(est), pierre_pour_type(Propriété), Sujet, Propriété)-->[est], {Sujet = pierre, est_type(Propriété)}.  %++++ à revoir l'appel, c'est bizarre comment ça marche.
 v(verbe(sont), pierre_pour_type(Propriété), Sujet, Propriété)-->[sont], {Sujet = pierre, est_type(Propriété)}.
 

@@ -156,11 +156,13 @@ separer([A|R],X,[A|Av],Ap):- X\==A, !, separer(R,X,Av,Ap).
 
 % ?-analyse(Arbre_synt, Semantique, [quelles, pierres, sont, sédimentaires], []).
 
+% EX: Est-ce que le marbre est igné?              ("Quelles pierres sont ignées?" marche aussi, mais ne fait pas partie de la liste de questions.
 analyse(groupePhrase(INT,GN,GV), Sémantique)-->
         int(INT, Type_Réponse),
         gn(GN, Agent),
         gv(GV, Sémantique, Agent).
 
+%EX: Quelles sont les pierres sédimentaires?
 analyse(groupePhrase(INT,GV,ADJ), Sémantique)-->
         int(INT, Type_Réponse),
         gv(GV, Sémantique, Propriété),
@@ -199,7 +201,7 @@ gv(groupeVerbal(V,GN), Sémantique, Propriété)-->
         gn(GN, Sujet).
 
 
-% Quelles sont pierres sont ignées?
+% Quelles sont les pierres ignées?
 v(verbe(est), pierre_pour_type(Propriété), Sujet, Propriété)-->[est], {Sujet = pierre, est_type(Propriété)}.  %++++ à revoir l'appel, c'est bizarre comment ça marche.
 v(verbe(sont), pierre_pour_type(Propriété), Sujet, Propriété)-->[sont], {Sujet = pierre, est_type(Propriété)}.
 
