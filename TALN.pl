@@ -48,11 +48,6 @@ type(calcaire, sédimentaire).
 
 
 
-pierre_pour_type(Type, Pierre) :- type(Pierre, Type).
-
-type_réagit_acide(Type) :- type(Pierre, Type), propriété(Pierre, réagit_acide).
-
-
 
 propriété(marbre, possède_cristaux).
 propriété(granite, possède_cristaux).
@@ -113,24 +108,42 @@ propriété(rhyolite, surface_claire).
 propriété(balsate, surface_foncée).
 
 
-propriété_communnes(Pierre1, Pierre2) :- propriété(Pierre1, Propriété), propriété(Pierre2, Propriété).
 
-
-%Commandes générales
+% Commandes générales
 
 lancer :- lire(_, Question),
           poser_question(Question, Réponse),
           write(Réponse).
 
 poser_question( Question, Réponse ) :- repondre(Question, Sens), evaluer(Sens, Réponse).
+poser_question( _, 'Question invalide.').
 
 repondre(Question, Sens) :- analyse(_, Sens, Question, []).
 
-evaluer(Sens, Réponse):- call(Sens, Réponse). %++++ À revoir, c'est un peu bizarre comment ça fonctionne.
+evaluer(Sens, Réponse):- call(Sens, Réponse).
 
 
 
-%Lecture des entrées de l'utilisateur
+% Prédicats évalués
+
+toutes_pierres_pour_type(Type, Réponse) :- findall(Pierre, type(Pierre, Type), Réponse).
+
+est_type(Pierre, Type, Réponse) :- call(type(Pierre, Type)), !, Réponse = oui.
+est_type(_, _, Réponse) :- Réponse = non.
+
+toutes_pierres_reagit_acide_pour_type(Type, Réponse) :- findall(Pierre, pierre_pour_type_et_propriété(Pierre, Type, réagit_acide), Réponse).
+pierre_pour_type_et_propriété(Pierre, Type, Propriété) :- type(Pierre, Type), propriété(Pierre, Propriété).
+
+toutes_propriétés_communes(Pierre1, Pierre2, Réponse) :- findall(Propriété, propriété_communnes(Pierre1, Pierre2, Propriété), Propriété_communes), ajouterTypeCommun(Pierre1, Pierre2, Propriété_communes, Réponse).
+propriété_communnes(Pierre1, Pierre2, Propriété) :- propriété(Pierre1, Propriété), propriété(Pierre2, Propriété).
+ajouterTypeCommun(Pierre1, Pierre2, Propriété_communes, [Type_commun|Propriété_communes]) :- type(Pierre1, Type_commun), type(Pierre2, Type_commun).
+ajouterTypeCommun(_, _, Propriété_communes, Propriété_communes).
+
+
+
+
+
+% Lecture des entrées de l'utilisateur
 
 % Le prédicat lire/2 lit une chaîne de caractères Chaine entre apostrophes
 % et terminée par un point.
@@ -160,8 +173,6 @@ separer([A|R],X,[A|Av],Ap):- X\==A, !, separer(R,X,Av,Ap).
 
 %Interprétation
 
-% ?-analyse(Arbre_synt, Semantique, [quelles, pierres, sont, sédimentaires], []).
-
 % EX: Est-ce que le marbre est igné?
 analyse(groupePhrase(INT, GN, GV), Sémantique)-->
         int(INT),
@@ -187,13 +198,14 @@ analyse(groupePhrase(INT, GN, GA, GV), Sémantique)-->
         ga(GA, Type),
         gv(GV, Sémantique, Agent, Type).
 
-% EX: Qu'ont en commun l'obsidienne et l'ardoise?
+% EX: Qu'ont en commun le schiste et le gneiss?
 analyse(groupePhrase(V_INT, GA, GN1, CONJ, GN2), Sémantique)-->
         v_int(V_INT, Sémantique, Sujet1, Sujet2, Lien),
         ga(GA, Lien),
         gn(GN1, Sujet1),
         conj(CONJ),
         gn(GN2, Sujet2).
+
 
 
 int(interrogation(ADJ_INT))-->
@@ -204,6 +216,7 @@ int(interrogation(INT_DIR, ADJ_INT))-->
         adj_int(ADJ_INT).
 
 
+
 adj_int(adjectif_interrogatif(quelle))-->[quelle].
 adj_int(adjectif_interrogatif(quelles))-->[quelles].
 adj_int(adjectif_interrogatif(que))-->[que].
@@ -211,7 +224,9 @@ adj_int(adjectif_interrogatif('qu''un'))-->['qu''un'].
 adj_int(adjectif_interrogatif('qu''une'))-->['qu''une'].
 
 
+
 int_dir(interrogation_directe('est-ce'))-->['est-ce'].
+
 
 
 gn(groupeNominal(N), Agent)-->
@@ -219,6 +234,7 @@ gn(groupeNominal(N), Agent)-->
 
 gn(groupeNominal(Art,N), Agent)-->
         art(Art),n(N, Agent).
+        
         
 
 gv(groupeVerbal(V,Adj), Sémantique, Sujet)-->
@@ -234,6 +250,7 @@ gv(groupeVerbal(V,COMP), Sémantique, Sujet, Type)-->
         comp(COMP, Propriété).
 
 
+
 ga(groupeAdjectival(ADJ), Adjectif)-->
         adj(ADJ, Adjectif).
 
@@ -242,31 +259,33 @@ ga(groupeAdjectival(PRÉP, ADJ), Adjectif)-->
         adj(ADJ, Adjectif).
 
 
+
 comp(complément(PRÉP, GN), Propriété)-->
         prép(PRÉP),
         gn(GN, Propriété).
 
 
+
 % Quelles sont les pierres sédimentaires?
-v(verbe(est), pierre_pour_type(Propriété), Sujet, Propriété)-->[est], {Sujet = pierre, est_type(Propriété)}.  %++++ à revoir l'appel, c'est bizarre comment ça marche.
-v(verbe(sont), pierre_pour_type(Propriété), Sujet, Propriété)-->[sont], {Sujet = pierre, est_type(Propriété)}.
+v(verbe(est), toutes_pierres_pour_type(Propriété), Sujet, Propriété)-->[est], {Sujet = pierre, est_type(Propriété)}.  %++++ à revoir l'appel, c'est bizarre comment ça marche.
+v(verbe(sont), toutes_pierres_pour_type(Propriété), Sujet, Propriété)-->[sont], {Sujet = pierre, est_type(Propriété)}.
 
 % Est-ce que le marbre est igné?
-v(verbe(est), type(Sujet, Propriété), Sujet, Propriété)-->[est], {est_pierre(Sujet), est_type(Propriété)}.
-v(verbe(sont), type(Sujet, Propriété), Sujet, Propriété)-->[sont], {est_pierre(Sujet), est_type(Propriété)}.
+v(verbe(est), est_type(Sujet, Propriété), Sujet, Propriété)-->[est], {est_pierre(Sujet), est_type(Propriété)}.
+v(verbe(sont), est_type(Sujet, Propriété), Sujet, Propriété)-->[sont], {est_pierre(Sujet), est_type(Propriété)}.
 
 % Le schiste est-il métamorphique?
-v_int(verbe_interrogatif('est-il'), type(Sujet, Propriété), Sujet, Propriété)-->['est-il'], {est_pierre(Sujet), est_type(Propriété)}.
-v_int(verbe_interrogatif('est-elle'), type(Sujet, Propriété), Sujet, Propriété)-->['est-elle'], {est_pierre(Sujet), est_type(Propriété)}.
-v_int(verbe_interrogatif('sont-ils'), type(Sujet, Propriété), Sujet, Propriété)-->['sont-ils'], {est_pierre(Sujet), est_type(Propriété)}.
-v_int(verbe_interrogatif('sont-elles'), type(Sujet, Propriété), Sujet, Propriété)-->['sont-elles'], {est_pierre(Sujet), est_type(Propriété)}.
+v_int(verbe_interrogatif('est-il'), est_type(Sujet, Propriété), Sujet, Propriété)-->['est-il'], {est_pierre(Sujet), est_type(Propriété)}.
+v_int(verbe_interrogatif('est-elle'), est_type(Sujet, Propriété), Sujet, Propriété)-->['est-elle'], {est_pierre(Sujet), est_type(Propriété)}.
+v_int(verbe_interrogatif('sont-ils'), est_type(Sujet, Propriété), Sujet, Propriété)-->['sont-ils'], {est_pierre(Sujet), est_type(Propriété)}.
+v_int(verbe_interrogatif('sont-elles'), est_type(Sujet, Propriété), Sujet, Propriété)-->['sont-elles'], {est_pierre(Sujet), est_type(Propriété)}.
 
 % Quelles pierres sédimentaires réagissent à l'acide?
-v(verbe(réagit), type_réagit_acide(Type), Sujet, Type, Propriété)-->['réagit'], {Sujet = pierre, est_type(Type), Propriété = acide}.
-v(verbe(réagissent), type_réagit_acide(Type), Sujet, Type, Propriété)-->['réagissent'], {Sujet = pierre, est_type(Type), Propriété = acide}.
+v(verbe(réagit), toutes_pierres_reagit_acide_pour_type(Type), Sujet, Type, Propriété)-->['réagit'], {Sujet = pierre, est_type(Type), Propriété = acide}.
+v(verbe(réagissent), toutes_pierres_reagit_acide_pour_type(Type), Sujet, Type, Propriété)-->['réagissent'], {Sujet = pierre, est_type(Type), Propriété = acide}.
 
-% Qu'ont en commun l'obsidienne et l'ardoise?
-v_int(verbe_interrogatif('qu''ont'), propriété_communnes(Sujet1, Sujet2), Sujet1, Sujet2, Lien)-->['qu''ont'], {est_pierre(Sujet1), est_pierre(Sujet2), Lien = commun}.
+% Qu'ont en commun le schiste et le gneiss?
+v_int(verbe_interrogatif('qu''ont'), toutes_propriétés_communes(Sujet1, Sujet2), Sujet1, Sujet2, Lien)-->['qu''ont'], {est_pierre(Sujet1), est_pierre(Sujet2), Lien = commun}.
 
 
 
