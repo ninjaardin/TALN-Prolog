@@ -23,6 +23,37 @@ est_pierre(calcaire).
 
 
 
+est_type(métamorphique).
+est_type(sédimentaire).
+est_type(ignée).
+
+type(marbre, métamorphique).
+type(schiste, métamorphique).
+type(gneiss, métamorphique).
+type(ardoise, métamorphique).
+type(schiste-argileux, métamorphique).
+
+type(gabbro, ignée).
+type(granit, ignée).
+type(scorie, ignée).
+type(pierre-ponce, ignée).
+type(obsidienne, ignée).
+type(rhyolite, ignée).
+type(basalte, ignée).
+
+type(grès, sédimentaire).
+type(conglomérat, sédimentaire).
+type(tuf, sédimentaire).
+type(calcaire, sédimentaire).
+
+
+
+pierre_pour_type(Type, Pierre) :- type(Pierre, Type).
+
+type_réagit_acide(Type) :- type(Pierre, Type), propriété(Pierre, réagit_acide).
+
+
+
 propriété(marbre, possède_cristaux).
 propriété(granite, possède_cristaux).
 propriété(gabbro, possède_cristaux).
@@ -39,8 +70,8 @@ propriété(gneiss, cristaux_en_couches).
 propriété(marbre, cristaux_clairs).
 propriété(granit, cristaux_clairs).
 
-propriété(marbre, réagit_à_l_acide).
-propriété(calcaire, réagit_à_l_acide).
+propriété(marbre, réagit_acide).
+propriété(calcaire, réagit_acide).
 
 propriété(gabbro, cristaux_foncés).
 
@@ -82,32 +113,7 @@ propriété(rhyolite, surface_claire).
 propriété(balsate, surface_foncée).
 
 
-
-
-pierre_pour_type(Type, Pierre) :- type(Pierre, Type).
-
-est_type(métamorphique).
-est_type(sédimentaire).
-est_type(ignée).
-
-type(marbre, métamorphique).
-type(schiste, métamorphique).
-type(gneiss, métamorphique).
-type(ardoise, métamorphique).
-type(schiste-argileux, métamorphique).
-
-type(gabbro, ignée).
-type(granit, ignée).
-type(scorie, ignée).
-type(pierre-ponce, ignée).
-type(obsidienne, ignée).
-type(rhyolite, ignée).
-type(basalte, ignée).
-
-type(grès, sédimentaire).
-type(conglomérat, sédimentaire).
-type(tuf, sédimentaire).
-type(calcaire, sédimentaire).
+propriété_communnes(Pierre1, Pierre2) :- propriété(Pierre1, Propriété), propriété(Pierre2, Propriété).
 
 
 %Commandes générales
@@ -156,34 +162,56 @@ separer([A|R],X,[A|Av],Ap):- X\==A, !, separer(R,X,Av,Ap).
 
 % ?-analyse(Arbre_synt, Semantique, [quelles, pierres, sont, sédimentaires], []).
 
-% EX: Est-ce que le marbre est igné?              ("Quelles pierres sont ignées?" marche aussi, mais ne fait pas partie de la liste de questions.
-analyse(groupePhrase(INT,GN,GV), Sémantique)-->
-        int(INT, Type_Réponse),
+% EX: Est-ce que le marbre est igné?
+analyse(groupePhrase(INT, GN, GV), Sémantique)-->
+        int(INT),
         gn(GN, Agent),
         gv(GV, Sémantique, Agent).
 
-%EX: Quelles sont les pierres sédimentaires?
-analyse(groupePhrase(INT,GV,ADJ), Sémantique)-->
-        int(INT, Type_Réponse),
+% EX: Quelles sont les pierres sédimentaires?
+analyse(groupePhrase(INT, GV, GA), Sémantique)-->
+        int(INT),
         gv(GV, Sémantique, Propriété),
-        adj(ADJ, Propriété).
+        ga(GA, Propriété).
 
-int(interrogation(ADJ_INT), Type_Réponse)-->
-        adj_int(ADJ_INT, Type_Réponse).
+% EX: Le schiste est-il métamorphique?
+analyse(groupePhrase(GN, V_INT, GA), Sémantique)-->
+        gn(GN, Agent),
+        v_int(V_INT, Sémantique, Agent, Propriété),
+        ga(GA, Propriété).
         
-int(interrogation(INT_DIR, ADJ_INT), Type_Réponse)-->
-        int_dir(INT_DIR, Type_Réponse),
+% EX: Quelles pierres sédimentaires réagissent à l'acide?
+analyse(groupePhrase(INT, GN, GA, GV), Sémantique)-->
+        int(INT),
+        gn(GN, Agent),
+        ga(GA, Type),
+        gv(GV, Sémantique, Agent, Type).
+
+% EX: Qu'ont en commun l'obsidienne et l'ardoise?
+analyse(groupePhrase(V_INT, GA, GN1, CONJ, GN2), Sémantique)-->
+        v_int(V_INT, Sémantique, Sujet1, Sujet2, Lien),
+        ga(GA, Lien),
+        gn(GN1, Sujet1),
+        conj(CONJ),
+        gn(GN2, Sujet2).
+
+
+int(interrogation(ADJ_INT))-->
+        adj_int(ADJ_INT).
+        
+int(interrogation(INT_DIR, ADJ_INT))-->
+        int_dir(INT_DIR),
         adj_int(ADJ_INT).
 
 
-adj_int(adjectif_interrogatif(quelle), liste)-->[quelle].
-adj_int(adjectif_interrogatif(quelles), liste)-->[quelles].
+adj_int(adjectif_interrogatif(quelle))-->[quelle].
+adj_int(adjectif_interrogatif(quelles))-->[quelles].
 adj_int(adjectif_interrogatif(que))-->[que].
 adj_int(adjectif_interrogatif('qu''un'))-->['qu''un'].
 adj_int(adjectif_interrogatif('qu''une'))-->['qu''une'].
 
 
-int_dir(interrogation_directe('est-ce'), oui_non)-->['est-ce'].
+int_dir(interrogation_directe('est-ce'))-->['est-ce'].
 
 
 gn(groupeNominal(N), Agent)-->
@@ -191,6 +219,7 @@ gn(groupeNominal(N), Agent)-->
 
 gn(groupeNominal(Art,N), Agent)-->
         art(Art),n(N, Agent).
+        
 
 gv(groupeVerbal(V,Adj), Sémantique, Sujet)-->
         v(V, Sémantique, Sujet, Propriété),
@@ -200,14 +229,45 @@ gv(groupeVerbal(V,GN), Sémantique, Propriété)-->
         v(V, Sémantique, Sujet, Propriété),
         gn(GN, Sujet).
 
+gv(groupeVerbal(V,COMP), Sémantique, Sujet, Type)-->
+        v(V, Sémantique, Sujet, Type, Propriété),
+        comp(COMP, Propriété).
 
-% Quelles sont les pierres ignées?
+
+ga(groupeAdjectival(ADJ), Adjectif)-->
+        adj(ADJ, Adjectif).
+
+ga(groupeAdjectival(PRÉP, ADJ), Adjectif)-->
+        prép(PRÉP),
+        adj(ADJ, Adjectif).
+
+
+comp(complément(PRÉP, GN), Propriété)-->
+        prép(PRÉP),
+        gn(GN, Propriété).
+
+
+% Quelles sont les pierres sédimentaires?
 v(verbe(est), pierre_pour_type(Propriété), Sujet, Propriété)-->[est], {Sujet = pierre, est_type(Propriété)}.  %++++ à revoir l'appel, c'est bizarre comment ça marche.
 v(verbe(sont), pierre_pour_type(Propriété), Sujet, Propriété)-->[sont], {Sujet = pierre, est_type(Propriété)}.
 
 % Est-ce que le marbre est igné?
 v(verbe(est), type(Sujet, Propriété), Sujet, Propriété)-->[est], {est_pierre(Sujet), est_type(Propriété)}.
 v(verbe(sont), type(Sujet, Propriété), Sujet, Propriété)-->[sont], {est_pierre(Sujet), est_type(Propriété)}.
+
+% Le schiste est-il métamorphique?
+v_int(verbe_interrogatif('est-il'), type(Sujet, Propriété), Sujet, Propriété)-->['est-il'], {est_pierre(Sujet), est_type(Propriété)}.
+v_int(verbe_interrogatif('est-elle'), type(Sujet, Propriété), Sujet, Propriété)-->['est-elle'], {est_pierre(Sujet), est_type(Propriété)}.
+v_int(verbe_interrogatif('sont-ils'), type(Sujet, Propriété), Sujet, Propriété)-->['sont-ils'], {est_pierre(Sujet), est_type(Propriété)}.
+v_int(verbe_interrogatif('sont-elles'), type(Sujet, Propriété), Sujet, Propriété)-->['sont-elles'], {est_pierre(Sujet), est_type(Propriété)}.
+
+% Quelles pierres sédimentaires réagissent à l'acide?
+v(verbe(réagit), type_réagit_acide(Type), Sujet, Type, Propriété)-->['réagit'], {Sujet = pierre, est_type(Type), Propriété = acide}.
+v(verbe(réagissent), type_réagit_acide(Type), Sujet, Type, Propriété)-->['réagissent'], {Sujet = pierre, est_type(Type), Propriété = acide}.
+
+% Qu'ont en commun l'obsidienne et l'ardoise?
+v_int(verbe_interrogatif('qu''ont'), propriété_communnes(Sujet1, Sujet2), Sujet1, Sujet2, Lien)-->['qu''ont'], {est_pierre(Sujet1), est_pierre(Sujet2), Lien = commun}.
+
 
 
 art(article(le))-->[le].
@@ -237,6 +297,9 @@ n(nom('l''obsidienne'), obsidienne)-->['l''obsidienne'].
 n(nom(rhyolite), rhyolite)-->[rhyolite].
 n(nom(basalte), basalte)-->[basalte].
 
+n(nom(acide), acide)-->[acide].
+n(nom('l''acide'), acide)-->['l''acide'].
+
 
 adj(adjectif(métamorphique), métamorphique)-->[métamorphique].
 adj(adjectif(métamorphiques), métamorphique)-->[métamorphiques].
@@ -246,6 +309,10 @@ adj(adjectif(igné),ignée)-->[igné].
 adj(adjectif(ignée),ignée)-->[ignée].
 adj(adjectif(ignées), ignée)-->[ignées].
 
+adj(adjectif(commun), commun)-->[commun].
+
+prép(préposition(à))-->[à].
+prép(préposition(en))-->[en].
 
 
-
+conj(conjonction(et))-->[et].
